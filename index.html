@@ -1,0 +1,304 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bubble Pop Game</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #111827, #312e81);
+    color: white;
+    text-align: center;
+    min-height: 100vh;
+    padding: 20px 10px;
+}
+
+h1 {
+    color: #00f5ff;
+    font-size: 32px;
+    margin: 15px 0;
+}
+
+.info {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px auto;
+    flex-wrap: wrap;
+}
+
+.info div {
+    background: #ffffff15;
+    border: 1px solid #ffffff30;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 18px;
+}
+
+.info span {
+    color: #00f5ff;
+    font-weight: bold;
+}
+
+button {
+    background: #00f5ff;
+    color: #111827;
+    border: none;
+    padding: 13px 28px;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 10px;
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+#gameArea {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+    height: 450px;
+    margin: 15px auto;
+    border: 2px solid #ffffff40;
+    border-radius: 18px;
+    background: #ffffff08;
+    overflow: hidden;
+    touch-action: manipulation;
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #ffffff80;
+    box-shadow: inset -5px -8px 15px #00000040,
+                0 0 15px currentColor;
+    animation: appear 0.2s ease-out;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bubble::after {
+    content: "";
+    position: absolute;
+    width: 25%;
+    height: 25%;
+    top: 18%;
+    left: 20%;
+    background: white;
+    opacity: 0.8;
+    border-radius: 50%;
+}
+
+@keyframes appear {
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+#message {
+    font-size: 18px;
+    margin: 15px;
+    min-height: 25px;
+}
+
+@media (max-width: 600px) {
+    h1 {
+        font-size: 27px;
+    }
+
+    #gameArea {
+        height: 55vh;
+        min-height: 320px;
+    }
+
+    .info div {
+        padding: 10px 14px;
+        font-size: 16px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🫧 Bubble Pop Game</h1>
+
+<p>Pop the bubbles before time runs out!</p>
+
+<div class="info">
+    <div>Score: <span id="score">0</span></div>
+    <div>Time: <span id="time">30</span>s</div>
+    <div>Best: <span id="best">0</span></div>
+</div>
+
+<button id="startBtn">Start Game</button>
+
+<div id="gameArea"></div>
+
+<p id="message">Press Start Game to play!</p>
+
+<script>
+"use strict";
+
+const gameArea = document.getElementById("gameArea");
+const scoreDisplay = document.getElementById("score");
+const timeDisplay = document.getElementById("time");
+const bestDisplay = document.getElementById("best");
+const message = document.getElementById("message");
+const startBtn = document.getElementById("startBtn");
+
+let score = 0;
+let time = 30;
+let playing = false;
+let timer = null;
+let spawnTimer = null;
+
+const colors = [
+    "#ff4dff",
+    "#00eaff",
+    "#ffe600",
+    "#ff5252",
+    "#7cff6b",
+    "#a970ff"
+];
+
+let best = 0;
+
+try {
+    best = Number(localStorage.getItem("bubbleBest")) || 0;
+} catch (error) {
+    best = 0;
+}
+
+bestDisplay.textContent = best;
+
+function createBubble() {
+    if (!playing) return;
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+
+    const size = Math.floor(Math.random() * 35) + 35;
+
+    const maxX = Math.max(0, gameArea.clientWidth - size);
+    const maxY = Math.max(0, gameArea.clientHeight - size);
+
+    const x = Math.random() * maxX;
+    const y = Math.random() * maxY;
+
+    const color = colors[
+        Math.floor(Math.random() * colors.length)
+    ];
+
+    bubble.style.width = size + "px";
+    bubble.style.height = size + "px";
+    bubble.style.left = x + "px";
+    bubble.style.top = y + "px";
+    bubble.style.backgroundColor = color;
+    bubble.style.color = color;
+
+    gameArea.appendChild(bubble);
+}
+
+function startGame() {
+    clearInterval(timer);
+    clearInterval(spawnTimer);
+
+    score = 0;
+    time = 30;
+    playing = true;
+
+    scoreDisplay.textContent = score;
+    timeDisplay.textContent = time;
+
+    gameArea.innerHTML = "";
+
+    message.textContent = "Pop the bubbles!";
+    startBtn.textContent = "Restart Game";
+
+    for (let i = 0; i < 5; i++) {
+        createBubble();
+    }
+
+    spawnTimer = setInterval(() => {
+        if (playing && gameArea.children.length < 15) {
+            createBubble();
+        }
+    }, 500);
+
+    timer = setInterval(() => {
+        time--;
+        timeDisplay.textContent = time;
+
+        if (time <= 0) {
+            endGame();
+        }
+    }, 1000);
+}
+
+function endGame() {
+    playing = false;
+
+    clearInterval(timer);
+    clearInterval(spawnTimer);
+
+    gameArea.innerHTML = "";
+
+    if (score > best) {
+        best = score;
+
+        try {
+            localStorage.setItem("bubbleBest", best);
+        } catch (error) {
+            // Game continues if storage is unavailable.
+        }
+
+        bestDisplay.textContent = best;
+
+        message.textContent =
+            "🏆 New High Score! Your Score: " + score;
+    } else {
+        message.textContent =
+            "⏰ Game Over! Your Score: " + score;
+    }
+
+    startBtn.textContent = "Play Again";
+}
+
+gameArea.addEventListener("pointerdown", function(event) {
+    if (!playing) return;
+
+    const bubble = event.target.closest(".bubble");
+
+    if (!bubble || !gameArea.contains(bubble)) return;
+
+    score++;
+    scoreDisplay.textContent = score;
+
+    bubble.remove();
+
+    createBubble();
+});
+
+startBtn.addEventListener("click", startGame);
+</script>
+
+</body>
+</html>
